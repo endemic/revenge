@@ -41,8 +41,8 @@
             [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
             [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
             [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
-            [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 2],
-            [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2],
+            [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
             [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
         ];
 
@@ -135,7 +135,6 @@
                     let possibleMoves = adjacentSquares(enemy).filter(isEmpty).sort(closerToPlayer);
 
                     if (possibleMoves.length === 0) {
-                        // TODO: change enemy graphic to show they are trapped
                         state[enemy.x][enemy.y] = ENEMY_TRAPPED;
                         return false;
                     }
@@ -164,7 +163,7 @@
                 // array of booleans (whether each enemy could move)
                 let enemiesMoved = this.enemies.map(move);
 
-                // array contains only `false` values
+                // array contains only `false` values -- meaning all enemies are trapped
                 if (enemiesMoved.every(val => !val)) {
                     // convert all enemies to pickups
                     this.enemies.forEach(enemy => state[enemy.x][enemy.y] = PICKUP);
@@ -238,7 +237,7 @@
                             y: position.y + diff.y
                         };
 
-                        if (state[next.x][next.y] === EMPTY) { // TODO: or if square has a pickup
+                        if ([EMPTY, PICKUP].includes(state[next.x][next.y])) {
                             // move the current block into the next space
                             state[next.x][next.y] = BLOCK;
 
