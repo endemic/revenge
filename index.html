@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Revenge</title>
+
+    <link rel="stylesheet" href="stylesheets/main.css">
+
+    <script src="scripts/grid.js"></script>
+    <script>
+        const EMPTY = 0;
+        const PLAYER = 1;
+        const WALL = 2;  // immovable
+        const ENEMY = 3;
+        const BLOCK = 4; // movable block, sokoban style
+        const PICKUP = 5;
+
+        // TODO: need a map editor :(
+        // in this representation, the upper left corner is (0,0); x increases
+        // as you go down, y increases as you go right
+        const MAP = [
+            [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+            [2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 0, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 0, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 0, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 0, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 0, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 0, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 1, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+        ];
+
+
+        class Revenge extends Grid {
+            cssClassMap = {
+                0: 'empty',
+                1: 'player',
+                2: 'wall',
+                3: 'enemy',
+                4: 'block',
+                5: 'pickup'
+            };
+
+            constructor() {
+                // wtf is up with this prime row/col count?
+                let rows = 23;
+                let columns = 23;
+
+                super(rows, columns);
+
+                // TODO: find initial player placement; nominally (11, 11) (0-index)
+                this.player = {
+                    x: 11,
+                    y: 11
+                };
+
+                // TODO: initial enemy placement
+                // current hard-coded
+                this.enemies = [
+                    {x: 1, y: 1}
+                ];
+
+                // load initial map state
+                let state = this.displayStateCopy();
+
+                for (let x = 0; x < this.columns; x += 1) {
+                    for (let y = 0; y < this.rows; y += 1) {
+                        state[x][y] = MAP[x][y];
+                    }
+                }
+
+                this.render(state);
+
+                this.gameOver = false;
+
+                // listen for player input
+                window.addEventListener('keydown', this.onKeyDown.bind(this));
+
+                const gridRef = document.querySelector('#grid');
+                grid.addEventListener('touchstart', e => console.log('TODO touchstart'));
+
+                // update enemy state independently of player movement
+                window.setInterval(this.moveEnemies.bind(this), 1000);
+            }
+
+
+            moveEnemies() {
+                let state = this.displayStateCopy()
+
+                // TODO: move these function definitions out of the method?
+                const adjacentSquares = ({x, y}) => {
+                    const withinBounds = ({ x, y }) => x >= 0 && x < this.columns && y >= 0 && y < this.rows;
+
+                    return [
+                        {x: x - 1, y: y - 1},
+                        {x: x, y: y - 1},
+                        {x: x + 1, y: y - 1},
+                        {x: x - 1, y: y},
+                        {x: x + 1, y: y - 1},
+                        {x: x - 1, y: y + 1},
+                        {x: x, y: y + 1},
+                        {x: x + 1, y: y + 1},
+                    ].filter(withinBounds);
+                };
+
+                const isEmpty = square => state[square.x][square.y] === EMPTY;
+
+                const closerToPlayer = (a, b) => {
+                    // TODO -- this sorting is a bit wonky;
+                    // the enemy won't go down a left/right tunnel to try to get the player
+                    // instead of moving directly left/right toward the player, the enemy moves in a zig-zag pattern
+                    // vertical movement seems to work as expectedd
+                    return Math.abs(this.player.x - a.x) + Math.abs(this.player.y - a.y) >=
+                        Math.abs(this.player.x - b.x) + Math.abs(this.player.y - b.y);
+                };
+
+                const move = enemy => {
+                    let possibleMoves = adjacentSquares(enemy).filter(isEmpty).sort(closerToPlayer);
+
+                    if (possibleMoves.length === 0) {
+                        console.log(`enemy can't move!`);
+                        // TODO: change enemy graphic to show they are trapped
+                        return false;
+                    }
+
+                    let next = possibleMoves.shift();
+
+                    // check collision with player
+                    if (state[next.x][next.y] === PLAYER) {
+                        // TODO: game over
+                    }
+
+                    // remove enemy from where they were
+                    state[enemy.x][enemy.y] = EMPTY;
+
+                    // update enemy ref
+                    enemy.x = next.x;
+                    enemy.y = next.y;
+
+                    // put enemy where they are now
+                    state[enemy.x][enemy.y] = ENEMY;
+
+                    return true;
+                };
+
+                let enemiesMoved = this.enemies.some(move);
+
+                if (!enemiesMoved) {
+                    // TODO: all enemies are trapped; end the level
+                }
+
+                this.render(state);
+            }
+
+            onKeyDown(event) {
+                if (this.gameOver) {
+                    return;
+                }
+
+                let diff = {
+                    x: 0,
+                    y: 0
+                };
+
+                switch (event.key) {
+                    case 'a':
+                    case 'ArrowLeft':
+                        diff.x -= 1;
+                        break;
+                    case 'd':
+                    case 'ArrowRight':
+                        diff.x += 1;
+                        break;
+                    case 'w':
+                    case 'ArrowUp':
+                        diff.y -= 1;
+                        break;
+                    case 's':
+                    case 'ArrowDown':
+                        diff.y += 1;
+                        break;
+                }
+
+                let next = {
+                    x: this.player.x + diff.x,
+                    y: this.player.y + diff.y
+                };
+
+                let state = this.displayStateCopy();
+
+                // basic collision detection
+                if (state[next.x][next.y] === EMPTY) {
+                    // remove player from where they were
+                    state[this.player.x][this.player.y] = EMPTY;
+
+                    // update player ref
+                    this.player.x = next.x;
+                    this.player.y = next.y;
+
+                    // put player where they are now
+                    state[this.player.x][this.player.y] = PLAYER;
+                }
+
+                // move blocks
+                if (state[next.x][next.y] === BLOCK) {
+
+                    // check all the adjacent squares in the direction the player is moving
+                    // if we hit an empty space, then all the blocks can be shifted in that direction
+                    // if we hit a wall, then return false
+                    const moveBlock = (state, position, diff) => {
+                        let next = {
+                            x: position.x + diff.x,
+                            y: position.y + diff.y
+                        };
+
+                        if (state[next.x][next.y] === EMPTY) { // TODO: or if square has a pickup
+                            // move the current block into the next space
+                            state[next.x][next.y] = BLOCK;
+
+                            // allow subsequent moves to proceed
+                            return true;
+                        } else if (state[next.x][next.y] === BLOCK) {
+                            if (moveBlock(state, next, diff)) {
+                                // move the current block into the next space
+                                state[next.x][next.y] = BLOCK;
+
+                                // allow subsequent moves to proceed
+                                return true;
+                            }
+                        } else {
+                            // if there's anything else in the way, then fail
+                            console.log(`Can't move block; ${this.cssClassMap[state[next.x][next.y]]} is in the way`);
+                            return false;
+                        }
+                    };
+
+                    // moving the entire row of blocks succeeded;
+                    // the player can now move into `next`
+                    if (moveBlock(state, next, diff)) {
+                        // remove player from where they were
+                        state[this.player.x][this.player.y] = EMPTY;
+
+                        // update player ref
+                        this.player.x = next.x;
+                        this.player.y = next.y;
+
+                        // put player where they are now
+                        state[this.player.x][this.player.y] = PLAYER;
+                    }
+                }
+
+                this.render(state);
+            }
+
+            displayGameOver() {
+                window.alert('u lose, bro');
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', e => {
+            new Revenge();
+        })
+
+    </script>
+</head>
+
+<body>
+    <div id="grid"></div>
+</body>
+
+</html>

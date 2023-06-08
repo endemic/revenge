@@ -1,0 +1,15 @@
+body {
+  background-color: #333;
+}
+
+#grid {
+  width: 50%;
+}
+
+#grid div { image-rendering: pixelated; }
+
+#grid div.empty { background: url('../images/empty.png') center/100%; }
+#grid div.player { background: url('../images/player.png') center/100%; }
+#grid div.wall { background: url('../images/wall.png') center/100%; }
+#grid div.block { background: url('../images/block.png') center/100%; }
+#grid div.enemy { background: url('../images/enemy.png') center/100%; }
