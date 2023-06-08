@@ -15,6 +15,7 @@
         const ENEMY = 3;
         const BLOCK = 4; // movable block, sokoban style
         const PICKUP = 5;
+        const ENEMY_TRAPPED = 6;
 
         // TODO: need a map editor :(
         // in this representation, the upper left corner is (0,0); x increases
@@ -53,7 +54,8 @@
                 2: 'wall',
                 3: 'enemy',
                 4: 'block',
-                5: 'pickup'
+                5: 'pickup',
+                6: 'enemy_trapped'
             };
 
             constructor() {
@@ -111,21 +113,19 @@
                         {x: x, y: y - 1},
                         {x: x + 1, y: y - 1},
                         {x: x - 1, y: y},
-                        {x: x + 1, y: y - 1},
+                        {x: x + 1, y: y},
                         {x: x - 1, y: y + 1},
                         {x: x, y: y + 1},
                         {x: x + 1, y: y + 1},
                     ].filter(withinBounds);
                 };
 
-                const isEmpty = square => state[square.x][square.y] === EMPTY;
+                // square containing the player is considered "empty", as we want the enemy to try to move there and git 'im!
+                const isEmpty = square => [EMPTY, PLAYER].includes(state[square.x][square.y]);
 
                 const closerToPlayer = (a, b) => {
-                    // TODO -- this sorting is a bit wonky;
-                    // the enemy won't go down a left/right tunnel to try to get the player
-                    // instead of moving directly left/right toward the player, the enemy moves in a zig-zag pattern
-                    // vertical movement seems to work as expectedd
-                    return Math.abs(this.player.x - a.x) + Math.abs(this.player.y - a.y) >=
+                    // very basic distance formula
+                    return Math.abs(this.player.x - a.x) + Math.abs(this.player.y - a.y) >
                         Math.abs(this.player.x - b.x) + Math.abs(this.player.y - b.y);
                 };
 
@@ -133,8 +133,8 @@
                     let possibleMoves = adjacentSquares(enemy).filter(isEmpty).sort(closerToPlayer);
 
                     if (possibleMoves.length === 0) {
-                        console.log(`enemy can't move!`);
                         // TODO: change enemy graphic to show they are trapped
+                        state[enemy.x][enemy.y] = ENEMY_TRAPPED;
                         return false;
                     }
 
@@ -143,6 +143,7 @@
                     // check collision with player
                     if (state[next.x][next.y] === PLAYER) {
                         // TODO: game over
+                        alert('Game over, man!');
                     }
 
                     // remove enemy from where they were
@@ -161,7 +162,13 @@
                 let enemiesMoved = this.enemies.some(move);
 
                 if (!enemiesMoved) {
-                    // TODO: all enemies are trapped; end the level
+                    // convert all enemies to pickups
+                    this.enemies.forEach(enemy => {
+                        state[enemy.x][enemy.y] = PICKUP;
+                    });
+
+                    // TODO: spawn new enemies and/or increment level
+                    this.enemies = [];
                 }
 
                 this.render(state);
@@ -218,7 +225,6 @@
 
                 // move blocks
                 if (state[next.x][next.y] === BLOCK) {
-
                     // check all the adjacent squares in the direction the player is moving
                     // if we hit an empty space, then all the blocks can be shifted in that direction
                     // if we hit a wall, then return false
