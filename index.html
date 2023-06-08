@@ -41,8 +41,8 @@
             [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
             [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
             [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
-            [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
-            [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 2],
+            [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2],
             [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
         ];
 
@@ -65,24 +65,23 @@
 
                 super(rows, columns);
 
-                // TODO: find initial player placement; nominally (11, 11) (0-index)
-                this.player = {
-                    x: 11,
-                    y: 11
-                };
+                this.enemies = [];
 
-                // TODO: initial enemy placement
-                // current hard-coded
-                this.enemies = [
-                    {x: 1, y: 1}
-                ];
-
-                // load initial map state
                 let state = this.displayStateCopy();
 
                 for (let x = 0; x < this.columns; x += 1) {
                     for (let y = 0; y < this.rows; y += 1) {
+                        // load initial map state
                         state[x][y] = MAP[x][y];
+
+                        // also set initial player/enemy positions
+                        if (state[x][y] === PLAYER) {
+                            this.player = { x, y };
+                        }
+
+                        if (state[x][y] === ENEMY) {
+                            this.enemies.push({ x, y });
+                        }
                     }
                 }
 
@@ -162,13 +161,13 @@
                     return true;
                 };
 
-                let enemiesMoved = this.enemies.some(move);
+                // array of booleans (whether each enemy could move)
+                let enemiesMoved = this.enemies.map(move);
 
-                if (!enemiesMoved) {
+                // array contains only `false` values
+                if (enemiesMoved.every(val => !val)) {
                     // convert all enemies to pickups
-                    this.enemies.forEach(enemy => {
-                        state[enemy.x][enemy.y] = PICKUP;
-                    });
+                    this.enemies.forEach(enemy => state[enemy.x][enemy.y] = PICKUP);
 
                     // TODO: spawn new enemies and/or increment level
                     this.enemies = [];
@@ -182,10 +181,7 @@
                     return;
                 }
 
-                let diff = {
-                    x: 0,
-                    y: 0
-                };
+                let diff = { x: 0, y: 0 };
 
                 switch (event.key) {
                     case 'a':
@@ -213,10 +209,8 @@
 
                 let state = this.displayStateCopy();
 
-                let nextValue = state[next.x][next.y];
-
-                // basic collision detection
-                if (nextValue === EMPTY || nextValue === PICKUP) {
+                // unhindered movement
+                if (state[next.x][next.y] === EMPTY || state[next.x][next.y] === PICKUP) {
                     // remove player from where they were
                     state[this.player.x][this.player.y] = EMPTY;
 
@@ -224,17 +218,17 @@
                     this.player.x = next.x;
                     this.player.y = next.y;
 
-                    // put player where they are now
-                    state[this.player.x][this.player.y] = PLAYER;
-
-                    if (nextValue === PICKUP) {
+                    if (state[next.x][next.y] === PICKUP) {
                         this.score += 100;
                         console.log(`Score: ${this.score}`);
                     }
+
+                    // put player where they are now
+                    state[this.player.x][this.player.y] = PLAYER;
                 }
 
                 // move blocks
-                if (nextValue === BLOCK) {
+                if (state[next.x][next.y] === BLOCK) {
                     // check all the adjacent squares in the direction the player is moving
                     // if we hit an empty space, then all the blocks can be shifted in that direction
                     // if we hit a wall, then return false
