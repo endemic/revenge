@@ -90,6 +90,9 @@
 
                 this.gameOver = false;
 
+                // TODO: display score somewhere
+                this.score = 0;
+
                 // listen for player input
                 window.addEventListener('keydown', this.onKeyDown.bind(this));
 
@@ -210,8 +213,10 @@
 
                 let state = this.displayStateCopy();
 
+                let nextValue = state[next.x][next.y];
+
                 // basic collision detection
-                if (state[next.x][next.y] === EMPTY) {
+                if (nextValue === EMPTY || nextValue === PICKUP) {
                     // remove player from where they were
                     state[this.player.x][this.player.y] = EMPTY;
 
@@ -221,10 +226,15 @@
 
                     // put player where they are now
                     state[this.player.x][this.player.y] = PLAYER;
+
+                    if (nextValue === PICKUP) {
+                        this.score += 100;
+                        console.log(`Score: ${this.score}`);
+                    }
                 }
 
                 // move blocks
-                if (state[next.x][next.y] === BLOCK) {
+                if (nextValue === BLOCK) {
                     // check all the adjacent squares in the direction the player is moving
                     // if we hit an empty space, then all the blocks can be shifted in that direction
                     // if we hit a wall, then return false
