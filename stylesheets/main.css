@@ -2,9 +2,17 @@ html,
 body {
   height: 100%;
   font: 1rem monospace;
+  margin: 0;
+  padding: 0;
 }
 
-body { background-color: #333; }
+body {
+  align-items: center;
+  background-color: #333;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
 
 main {
   background-color: lightgrey;
@@ -18,8 +26,8 @@ main {
   border-left: 1px solid black;
   border-right: 1px solid white;
   border-bottom: 1px solid white;
-  width: 50%;
   height: 3.5%;
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -31,7 +39,12 @@ main {
   background: url('../images/extra_life.png') center/100% no-repeat;
 }
 
-#grid { width: 50%; }
+#grid {
+  -webkit-user-select: none;
+  touch-action: none;
+  user-select: none;
+  width: 100%;
+}
 #grid div { image-rendering: pixelated; }
 #grid div.empty { background: url('../images/empty.png') center/100%; }
 #grid div.player { background: url('../images/player.png') center/100%; }
@@ -40,3 +53,8 @@ main {
 #grid div.pickup { background: url('../images/pickup.png') center/100%; }
 #grid div.enemy { background: url('../images/enemy.png') center/100%; }
 #grid div.enemy_trapped { background: url('../images/enemy_trapped.png') center/100%; }
+
+/* desktop styles */
+@media (min-width: 768px) and (orientation: landscape) {
+  #meta, #grid { width: 50%; }
+}
