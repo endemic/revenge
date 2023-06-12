@@ -18,39 +18,39 @@ class Revenge extends Grid {
     };
 
     constructor() {
-        // wtf is up with this prime row/col count?
         let rows = 23;
         let columns = 23;
 
         super(rows, columns);
 
         this.enemies = [];
+        this.currentLevel = 0;  // TODO: get from query params or something
 
         let state = this.displayStateCopy();
 
         for (let x = 0; x < this.columns; x += 1) {
             for (let y = 0; y < this.rows; y += 1) {
                 // load initial map state
-                // TODO: hardcoded level 1
-                state[x][y] = levels[0][x][y];
+                state[x][y] = levels[this.currentLevel][x][y];
 
                 // also set initial player/enemy positions
                 if (state[x][y] === PLAYER) {
                     this.player = { x, y };
                 }
-
-                if (state[x][y] === ENEMY) {
-                    this.enemies.push({ x, y });
-                }
             }
         }
+
+        // create initial enemy
+        this.spawnEnemy(state);
 
         this.render(state);
 
         this.gameOver = false;
 
-        // TODO: display score somewhere
         this.score = 0;
+
+        // TODO: display extra lives
+        this.extraLives = 2;
 
         // listen for player input
         window.addEventListener('keydown', this.onKeyDown.bind(this));
@@ -128,11 +128,41 @@ class Revenge extends Grid {
             // convert all enemies to pickups
             this.enemies.forEach(enemy => state[enemy.x][enemy.y] = PICKUP);
 
-            // TODO: spawn new enemies and/or increment level
+            // clear out current enemy list
             this.enemies = [];
+
+            // generate two more baddies
+            this.spawnEnemy(state);
+            this.spawnEnemy(state);
         }
 
         this.render(state);
+    }
+
+    spawnEnemy(state) {
+      // randomly choose spawn point
+      const spawnPoints = [
+        { x: 1, y: Math.floor(this.rows / 2) }, // left
+        { x: this.columns - 3, y: Math.floor(this.rows / 2) }, // right
+        { x: Math.floor(this.columns / 2), y: 1 },  // top
+        { x: Math.floor(this.columns / 2), y: this.rows - 3 } // bottom
+      ];
+
+      let enemy = spawnPoints[Math.floor(Math.random() * spawnPoints.length)];
+
+      while (state[enemy.x][enemy.y] !== EMPTY) {
+        enemy.x += 1;
+
+        // wrap around if we still can't find a place
+        if (enemy.x >= this.columns) {
+          enemy.x = 1;
+          enemy.y += 1;
+        }
+      }
+
+      state[enemy.x][enemy.y] = ENEMY;
+
+      this.enemies.push(enemy);
     }
 
     onKeyDown(event) {
@@ -179,7 +209,7 @@ class Revenge extends Grid {
 
             if (state[next.x][next.y] === PICKUP) {
                 this.score += 100;
-                console.log(`Score: ${this.score}`);
+                this.renderScore();
             }
 
             // put player where they are now
@@ -234,6 +264,10 @@ class Revenge extends Grid {
         }
 
         this.render(state);
+    }
+
+    renderScore() {
+      document.querySelector('#score').textContent = this.score;
     }
 
     displayGameOver() {

@@ -1,4 +1,35 @@
+html,
+body {
+  height: 100%;
+  font: 1rem monospace;
+}
+
 body { background-color: #333; }
+
+main {
+  background-color: lightgrey;
+  padding: 1px;
+  width: 50%;
+}
+
+#meta {
+  background-color: lightgrey;
+  border-top: 1px solid black;
+  border-left: 1px solid black;
+  border-right: 1px solid white;
+  border-bottom: 1px solid white;
+  width: 50%;
+  height: 3.5%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#lives div {
+  width: 4%;
+  height: 100%;
+  background: url('../images/extra_life.png') center/100% no-repeat;
+}
 
 #grid { width: 50%; }
 #grid div { image-rendering: pixelated; }
