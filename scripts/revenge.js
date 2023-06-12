@@ -56,12 +56,12 @@ class Revenge extends Grid {
         window.addEventListener('keydown', this.onKeyDown.bind(this));
 
         const gridRef = document.querySelector('#grid');
-        grid.addEventListener('touchstart', e => console.log('TODO touchstart'));
+        grid.addEventListener('touchstart', this.onTouchStart.bind(this));
+        grid.addEventListener('touchend', this.onTouchEnd.bind(this));
 
         // update enemy state independently of player movement
         window.setInterval(this.moveEnemies.bind(this), 1000);
     }
-
 
     moveEnemies() {
         let state = this.displayStateCopy()
@@ -165,6 +165,82 @@ class Revenge extends Grid {
       this.enemies.push(enemy);
     }
 
+    move(diff) {
+      let next = {
+          x: this.player.x + diff.x,
+          y: this.player.y + diff.y
+      };
+
+      let state = this.displayStateCopy();
+
+      // unhindered movement
+      if (state[next.x][next.y] === EMPTY || state[next.x][next.y] === PICKUP) {
+          // remove player from where they were
+          state[this.player.x][this.player.y] = EMPTY;
+
+          // update player ref
+          this.player.x = next.x;
+          this.player.y = next.y;
+
+          if (state[next.x][next.y] === PICKUP) {
+              this.score += 100;
+              this.renderScore();
+          }
+
+          // put player where they are now
+          state[this.player.x][this.player.y] = PLAYER;
+      }
+
+      // move blocks
+      if (state[next.x][next.y] === BLOCK) {
+          // check all the adjacent squares in the direction the player is moving
+          // if we hit an empty space, then all the blocks can be shifted in that direction
+          // if we hit a wall, then return false
+          const moveBlock = (state, position, diff) => {
+              let next = {
+                  x: position.x + diff.x,
+                  y: position.y + diff.y
+              };
+
+              if ([EMPTY, PICKUP].includes(state[next.x][next.y])) {
+                  // move the current block into the next space
+                  state[next.x][next.y] = BLOCK;
+
+                  // allow subsequent moves to proceed
+                  return true;
+              } else if (state[next.x][next.y] === BLOCK) {
+                  if (moveBlock(state, next, diff)) {
+                      // move the current block into the next space
+                      state[next.x][next.y] = BLOCK;
+
+                      // allow subsequent moves to proceed
+                      return true;
+                  }
+              } else {
+                  // if there's anything else in the way, then fail
+                  console.log(`Can't move block; ${this.cssClassMap[state[next.x][next.y]]} is in the way`);
+                  return false;
+              }
+          };
+
+          // moving the entire row of blocks succeeded;
+          // the player can now move into `next`
+          if (moveBlock(state, next, diff)) {
+              // remove player from where they were
+              state[this.player.x][this.player.y] = EMPTY;
+
+              // update player ref
+              this.player.x = next.x;
+              this.player.y = next.y;
+
+              // put player where they are now
+              state[this.player.x][this.player.y] = PLAYER;
+          }
+      }
+
+      this.render(state);
+    }
+
     onKeyDown(event) {
         if (this.gameOver) {
             return;
@@ -191,79 +267,49 @@ class Revenge extends Grid {
                 break;
         }
 
-        let next = {
-            x: this.player.x + diff.x,
-            y: this.player.y + diff.y
-        };
+        this.move(diff);
+    }
 
-        let state = this.displayStateCopy();
+    onTouchStart(event) {
+      // store where the player first touched the screen
+      this.currentTouch = event.changedTouches[0];  // only care about the first touch
+    }
 
-        // unhindered movement
-        if (state[next.x][next.y] === EMPTY || state[next.x][next.y] === PICKUP) {
-            // remove player from where they were
-            state[this.player.x][this.player.y] = EMPTY;
+    onTouchEnd(event) {
+      // store local ref to last touch
+      const endTouch = event.changedTouches[0];
 
-            // update player ref
-            this.player.x = next.x;
-            this.player.y = next.y;
+      let xDiff = endTouch.clientX - this.currentTouch.clientX;
+      let yDiff = endTouch.clientY - this.currentTouch.clientY;
 
-            if (state[next.x][next.y] === PICKUP) {
-                this.score += 100;
-                this.renderScore();
-            }
+      let diff = { x: 0, y: 0 };
 
-            // put player where they are now
-            state[this.player.x][this.player.y] = PLAYER;
+      // if player just tapped without swiping a direction,
+      if (Math.abs(xDiff) + Math.abs(yDiff) < 10) {
+        // TODO: determine what quadrant of screen was tapped;
+
+      // player moved their finger horizontally more than vertically
+      } else if (Math.abs(xDiff) > Math.abs(yDiff)) {
+        // user moved their finger (mostly) right
+        if (xDiff > 0) {
+          // move right
+          diff.x += 1;
+        } else {
+          //  move left
+          diff.x -= 1;
         }
-
-        // move blocks
-        if (state[next.x][next.y] === BLOCK) {
-            // check all the adjacent squares in the direction the player is moving
-            // if we hit an empty space, then all the blocks can be shifted in that direction
-            // if we hit a wall, then return false
-            const moveBlock = (state, position, diff) => {
-                let next = {
-                    x: position.x + diff.x,
-                    y: position.y + diff.y
-                };
-
-                if ([EMPTY, PICKUP].includes(state[next.x][next.y])) {
-                    // move the current block into the next space
-                    state[next.x][next.y] = BLOCK;
-
-                    // allow subsequent moves to proceed
-                    return true;
-                } else if (state[next.x][next.y] === BLOCK) {
-                    if (moveBlock(state, next, diff)) {
-                        // move the current block into the next space
-                        state[next.x][next.y] = BLOCK;
-
-                        // allow subsequent moves to proceed
-                        return true;
-                    }
-                } else {
-                    // if there's anything else in the way, then fail
-                    console.log(`Can't move block; ${this.cssClassMap[state[next.x][next.y]]} is in the way`);
-                    return false;
-                }
-            };
-
-            // moving the entire row of blocks succeeded;
-            // the player can now move into `next`
-            if (moveBlock(state, next, diff)) {
-                // remove player from where they were
-                state[this.player.x][this.player.y] = EMPTY;
-
-                // update player ref
-                this.player.x = next.x;
-                this.player.y = next.y;
-
-                // put player where they are now
-                state[this.player.x][this.player.y] = PLAYER;
-            }
+      // player moved their finger vertically more than horizontally
+      } else {
+        if (yDiff > 0) {
+          // move down
+          diff.y += 1;
+        } else {
+          // move up
+          diff.y -= 1;
         }
+      }
 
-        this.render(state);
+      this.move(diff);
     }
 
     renderScore() {
